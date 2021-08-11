@@ -1,0 +1,5 @@
+
+auto_offset_reset: "latest"
+boostrap_servers: "host.docker.internal:9092"
+group_id: "reckoning"
+topic: "sampler-v1"

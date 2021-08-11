@@ -16,3 +16,4 @@ RUN apt-get update \
         /usr/share/doc \
         /usr/share/doc-base
 WORKDIR /
+CMD python /sub/pipelines/consume.py

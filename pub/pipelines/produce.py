@@ -63,7 +63,7 @@ def make_data() -> None:
                 dict(
                     ts=str(datetime.utcnow()),
                     room=rooms[randint(1, 3)],
-                    count=randint(0, 9999)
+                    count=randint(0, 9)
                 )
             )
             handle_transient_errors(
