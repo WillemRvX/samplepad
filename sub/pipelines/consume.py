@@ -80,15 +80,16 @@ def etl_streaming() -> None:
             )
             with psycopg2.connect(**kwargs) as conn:
                 with conn.cursor() as curse:
-                    current_state = dict()
-                    for room in data.keys():
+                    for room, cnt in data.items():
                         curse.execute(f'''
-                            SELECT count FROM rooms_n_counts WHERE room = "{room}"
+                            UPDATE room_and_counts
+                            SET counts = counts + {cnt}
+                            WHERE room = '{room}'
                         ''')
-                        room_cnt = list(
-                            r for r in curse
-                        )[0]
-                        current_state[room] = room_cnt
+                if curse.close:
+                    return True
+                else:
+                    return False
 
     def etl(data: list) -> bool:
         return (
