@@ -8,7 +8,7 @@ import psycopg2
 from confluent_kafka import Consumer, KafkaException, KafkaError
 
 
-def configs() -> dict:
+def configs() -> dict[str, str]:
     with open('/sub/configs/specs.yaml') as confs:
         return yaml \
             .safe_load(
@@ -34,7 +34,7 @@ def etl_on_the_fly() -> None:
                 mssg = consumer.poll(timeout=1.0)
                 if mssg is None: continue
                 if mssg.error():
-                    if mssg.error().code() == KafkaError._PARTITION_EOF:
+                    if mssg.error().code() in {KafkaError._PARTITION_EOF, }:
                         err = f'{mssg.topic()} EOF reached at {mssg.offset()}'
                         print(err)
                     elif mssg.error():
@@ -50,10 +50,10 @@ def etl_on_the_fly() -> None:
         finally:
             consumer.close()
 
-    def extract(data: list) -> list:
+    def extract(data: list[bytes]) -> list[json]:
         return list(json.loads(r) for r in data)
 
-    def transform(data: list) -> dict:
+    def transform(data: list[json]) -> dict[str, int]:
 
         def qa_check(proc: dict) -> bool:
             num_rooms = proc.keys()
@@ -69,23 +69,30 @@ def etl_on_the_fly() -> None:
             if qa_check(aggs):
                 return dict(aggs)
 
-    def load(data: dict) -> bool:
+    def load(data: dict[str, int]) -> bool:
         if data:
             kwargs = dict(
                 dbname=meta['db_name'],
                 host=meta['db_host'],
-                user=os.environ.get('USER', 'default'),
+                user=os.environ.get('USER', 'jameskirk'),
                 password=os.environ.get('PW', '1b2b3'),
             )
             with psycopg2.connect(**kwargs) as conn:
                 with conn.cursor() as curse:
+                    table = 'room_and_counts'
                     for room, cnt in data.items():
-                        curse.execute(f'''
-                            UPDATE room_and_counts
-                            SET counts = counts + {cnt}
-                            WHERE room = '{room}'
-                        ''')
-                if curse.close:
+                        curse.execute(
+                            f'''
+                            INSERT INTO {table} (room, count) 
+                            VALUES ('{room}', {cnt})
+                            ON CONFLICT (room)
+                            DO
+                                UPDATE
+                                SET count = {table}.count + {cnt}
+                                WHERE {table}.room = '{room}'
+                            '''
+                        )
+                if curse.closed:
                     return True
                 else:
                     return False
