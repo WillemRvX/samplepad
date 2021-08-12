@@ -58,7 +58,7 @@ def make_data() -> None:
 
     def pub() -> None:
         prod = Producer(prod_conf)
-        for _ in range(100):
+        for _ in range(10000):
             mssg = json.dumps(
                 dict(
                     ts=str(datetime.utcnow()),

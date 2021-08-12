@@ -1,4 +1,4 @@
 
-boostrap_servers: "localhost:9092"
+boostrap_servers: "host.docker.internal:9092"
 delivery_timeout_ms: "500"
 topic: "sampler-v1"

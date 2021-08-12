@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import json
+import os
 import yaml
 from collections import defaultdict
 import psycopg2
@@ -15,7 +16,7 @@ def configs() -> dict:
             )
 
 
-def etl_streaming() -> None:
+def etl_on_the_fly() -> None:
 
     meta = configs()
     con_conf = {
@@ -28,7 +29,7 @@ def etl_streaming() -> None:
     def con(ETL: callable) -> None:
         data, consumer = list(), Consumer(con_conf)
         try:
-            consumer.subscribe(meta['topic'])
+            consumer.subscribe([meta['topic'], ])
             while True:
                 mssg = consumer.poll(timeout=1.0)
                 if mssg is None: continue
@@ -40,25 +41,23 @@ def etl_streaming() -> None:
                         raise KafkaException(mssg.error())
                 else:
                     data.append(mssg.value())
-                    if ETL(data):
-                        data = list()
-                        consumer.commit(
-                            asynchronous=False
-                        )
+                    if len(data) == 100:
+                        if ETL(data):
+                            data = list()
+                            consumer.commit(
+                                asynchronous=False
+                            )
         finally:
             consumer.close()
 
     def extract(data: list) -> list:
-        if len(data) == 100:
-            return list(
-                json.loads(r) for r in data
-            )
+        return list(json.loads(r) for r in data)
 
     def transform(data: list) -> dict:
 
         def qa_check(proc: dict) -> bool:
             num_rooms = proc.keys()
-            if num_rooms == 3:
+            if len(num_rooms) <= 3:
                 return True
             else:
                 return False
@@ -66,17 +65,17 @@ def etl_streaming() -> None:
         if data:
             aggs = defaultdict(int)
             for r in data:
-                aggs[r['room']] += int(r['count'])
+                aggs[r['room']] += r['count']
             if qa_check(aggs):
-                return aggs
+                return dict(aggs)
 
     def load(data: dict) -> bool:
         if data:
             kwargs = dict(
-                dbname=meta['dbname'],
+                dbname=meta['db_name'],
                 host=meta['db_host'],
-                user='',
-                password='',
+                user=os.environ.get('USER', 'default'),
+                password=os.environ.get('PW', '1b2b3'),
             )
             with psycopg2.connect(**kwargs) as conn:
                 with conn.cursor() as curse:
@@ -105,4 +104,4 @@ def etl_streaming() -> None:
 
 if __name__ == '__main__':
 
-    etl_streaming()
+    etl_on_the_fly()

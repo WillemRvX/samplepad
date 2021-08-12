@@ -1,5 +1,7 @@
 
-auto_offset_reset: "latest"
+auto_offset_reset: "earliest"
 boostrap_servers: "host.docker.internal:9092"
+db_host: "localhost"
+db_name: "room_n_board"
 group_id: "reckoning"
 topic: "sampler-v1"
