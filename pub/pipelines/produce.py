@@ -13,16 +13,22 @@ from confluent_kafka import Message, Producer
 ENV = os.environ['_ENV_']
 if ENV == 'local':
     WORKDIR = f'{os.environ["HOME"]}/workspace/repos/samplepad'
-if ENV == 'docker':
+else:
     WORKDIR = ''
 
 
-def config() -> dict[str, str]:
+def config() -> dict:
     with open(f'{WORKDIR}/pub/configs/specs.yaml') as confs:
-        return yaml \
-            .safe_load(
-                confs
+        confs, port = yaml.safe_load(confs), '9092'
+        confs.update(
+            dict(
+                servers=dict(
+                    local=f'localhost:{port}',
+                    docker=f'host.internal.docker:{port}',
+                )
             )
+        )
+        return confs
 
 
 def make_hash(mssg: str) -> str:
@@ -43,9 +49,9 @@ def ack(error, mssg: Message) -> None:
 
 def handles(producer: Producer, mssg: str, retry_cnt: int) -> None:
     if retry_cnt > 2: raise Exception('No dice!')
-    meta, transients = config(), (OSError, )
+    confs, transients = config(), (OSError, )
     kwargs = dict(
-        topic=meta['topic'],
+        topic=confs['topic'],
         key=make_hash(mssg),
         value=mssg,
         callback=ack,
@@ -62,15 +68,10 @@ def handles(producer: Producer, mssg: str, retry_cnt: int) -> None:
 
 def run() -> None:
 
-    meta = config()
-    servers = (
-        meta['boostrap_servers']
-        if ENV == 'docker'
-        else 'localhost:9092'
-    )
+    confs = config()
     prod_conf = {
-        'bootstrap.servers': servers,
-        'delivery.timeout.ms': meta['delivery_timeout_ms'],
+        'bootstrap.servers': confs['servers'].get(ENV, confs['boostrap_servers']),
+        'delivery.timeout.ms': confs['delivery_timeout_ms'],
     }
     rooms = {1: 'A', 2: 'B', 3: 'C', }
 

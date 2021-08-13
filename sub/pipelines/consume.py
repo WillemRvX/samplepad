@@ -11,16 +11,22 @@ from confluent_kafka import Consumer, KafkaException, KafkaError
 ENV = os.environ['_ENV_']
 if ENV == 'local':
     WORKDIR = f'{os.environ["HOME"]}/workspace/repos/samplepad'
-if ENV == 'docker':
+else:
     WORKDIR = ''
 
 
-def configs() -> dict[str, str]:
+def configs() -> dict:
     with open(f'{WORKDIR}/sub/configs/specs.yaml') as confs:
-        return yaml \
-            .safe_load(
-                confs
+        confs, port = yaml.safe_load(confs), '9092'
+        confs.update(
+            dict(
+                servers=dict(
+                    local=f'localhost:{port}',
+                    docker=f'host.internal.docker:{port}',
+                )
             )
+        )
+        return confs
 
 
 def extract(data: list[bytes]) -> list[json]:
@@ -68,11 +74,11 @@ def load(data: dict[str, int]) -> bool:
                 WHERE {table}.room = '{room}'
         '''
 
-    meta = configs()
+    confs = configs()
     if data:
         kwargs = dict(
-            dbname=meta['db_name'],
-            host=meta['db_host'],
+            dbname=confs['db_name'],
+            host=confs['db_host'],
             user=os.environ.get('USER'),
             password=os.environ.get('PW'),
         )
@@ -96,21 +102,16 @@ def load(data: dict[str, int]) -> bool:
 
 
 def subscriber(ETL: callable) -> None:
-    meta = configs()
-    servers = (
-        meta['boostrap_servers']
-        if ENV == 'docker'
-        else 'localhost:9092'
-    )
+    confs = configs()
     con_conf = {
-        'bootstrap.servers': servers,
-        'group.id': meta['group_id'],
+        'bootstrap.servers': confs['servers'].get(ENV, confs['boostrap_servers']),
+        'group.id': confs['group_id'],
         'enable.auto.commit': False,
-        'auto.offset.reset': meta['auto_offset_reset'],
+        'auto.offset.reset': confs['auto_offset_reset'],
     }
     data, consumer = list(), Consumer(con_conf)
     try:
-        consumer.subscribe([meta['topic'], ])
+        consumer.subscribe([confs['topic'], ])
         while True:
             mssg = consumer.poll(timeout=1.0)
             if mssg is None: continue
