@@ -1,6 +1,6 @@
 FROM python:3.9.6-slim
-COPY . /sub
-WORKDIR /sub
+COPY . /totalcounts
+WORKDIR /totalcounts
 ARG __ENV__
 ARG __PW__
 ARG __USER__

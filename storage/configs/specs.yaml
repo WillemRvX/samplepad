@@ -1,0 +1,6 @@
+
+auto_offset_reset: "earliest"
+bucket: "roomscounts-1b2b3"
+boostrap_servers: "localhost:9092"
+group_id: "coldstorage"
+topic: "rooms-v1"

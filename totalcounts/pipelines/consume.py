@@ -16,7 +16,7 @@ else:
 
 
 def configs() -> dict:
-    with open(f'{WORKDIR}/sub/configs/specs.yaml') as confs:
+    with open(f'{WORKDIR}/totalcounts/configs/specs.yaml') as confs:
         confs, port = yaml.safe_load(confs), '9092'
         confs.update(
             dict(

@@ -5,7 +5,7 @@ from setuptools import setup
 
 
 setup(
-    name='pub',
+    name='storage',
     version='0.0',
     packages=setuptools.find_packages()
 )

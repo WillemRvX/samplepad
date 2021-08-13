@@ -1,6 +1,6 @@
 FROM python:3.9.6-slim
-COPY . /pub
-WORKDIR /pub
+COPY . /makedata
+WORKDIR /makedata
 ARG __ENV__
 ENV _ENV_=${__ENV__}
 RUN apt-get update \

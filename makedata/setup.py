@@ -5,7 +5,7 @@ from setuptools import setup
 
 
 setup(
-    name='sub',
+    name='makedata',
     version='0.0',
     packages=setuptools.find_packages()
 )
