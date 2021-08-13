@@ -17,7 +17,15 @@ def configs() -> dict[str, str]:
 
 
 def extract(data: list[bytes]) -> list[json]:
-    return list(json.loads(r) for r in data)
+
+    def is_valid(row: bytes) -> bool:
+        try:
+            json.loads(row)
+        except (ValueError, TypeError):
+            return False
+        return True
+
+    return list(json.loads(r) for r in data if is_valid(r))
 
 
 def transform(data: list[json]) -> dict[str, int]:
@@ -103,23 +111,23 @@ def run() -> None:
 
     def etl(data: list) -> bool:
 
-        def handle_transcient_errors(etl: bool) -> bool:
-            retry_cnt = 0
+        def handles() -> bool:
+            retry_cnt, transients = 0, (OSError, )
             while True:
                 if retry_cnt > 2:
                     raise Exception('No dice!')
                 try:
-                    return etl
-                except OSError:
+                    return (                        # This is what a
+                        load(                       # data pipeline should
+                            transform(              # look like IMHO.
+                                extract(data)       # Influenced by functional
+                            )                       # programming.
+                        )
+                    )
+                except transients:
                     retry_cnt += 1
 
-        return handle_transcient_errors(
-            load(
-                transform(
-                    extract(data)
-                )
-            )
-        )
+        return handles()
 
     consume(etl)
 
