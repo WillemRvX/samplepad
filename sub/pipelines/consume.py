@@ -8,8 +8,15 @@ import psycopg2
 from confluent_kafka import Consumer, KafkaException, KafkaError
 
 
+ENV = os.environ['_ENV_']
+if ENV == 'local':
+    WORKDIR = f'{os.environ["HOME"]}/workspace/repos/samplepad'
+if ENV == 'docker':
+    WORKDIR = ''
+
+
 def configs() -> dict[str, str]:
-    with open('/sub/configs/specs.yaml') as confs:
+    with open(f'{WORKDIR}/sub/configs/specs.yaml') as confs:
         return yaml \
             .safe_load(
                 confs
@@ -25,12 +32,15 @@ def extract(data: list[bytes]) -> list[json]:
             return False
         return True
 
-    return list(json.loads(r) for r in data if is_valid(r))
+    return list(
+        json.loads(r) for r in data
+        if is_valid(r)
+    )
 
 
 def transform(data: list[json]) -> dict[str, int]:
 
-    def qa_check(proc: dict) -> bool:
+    def qa_check(proc: dict[str, int]) -> bool:
         num_rooms = proc.keys()
         if len(num_rooms) <= 3:
             return True
@@ -46,28 +56,38 @@ def transform(data: list[json]) -> dict[str, int]:
 
 
 def load(data: dict[str, int]) -> bool:
+
+    def sql(table: str, room: str, cnt: int) -> str:
+        return f'''
+            INSERT INTO {table} (room, total_count) 
+            VALUES ('{room}', {cnt})
+            ON CONFLICT (room)
+            DO
+                UPDATE
+                SET total_count = {table}.total_count + {cnt}
+                WHERE {table}.room = '{room}'
+        '''
+
     meta = configs()
     if data:
         kwargs = dict(
             dbname=meta['db_name'],
             host=meta['db_host'],
-            user=os.environ.get('USER', 'jameskirk'),
-            password=os.environ.get('PW', '1b2b3'),
+            user=os.environ.get('USER'),
+            password=os.environ.get('PW'),
         )
         with psycopg2.connect(**kwargs) as conn:
             with conn.cursor() as curse:
-                table = 'room_and_counts'
+                table = 'room_n_total_counts'
                 for room, cnt in data.items():
+                    if ENV == 'local':
+                        print(room, cnt)
                     curse.execute(
-                        f'''
-                        INSERT INTO {table} (room, count) 
-                        VALUES ('{room}', {cnt})
-                        ON CONFLICT (room)
-                        DO
-                            UPDATE
-                            SET count = {table}.count + {cnt}
-                            WHERE {table}.room = '{room}'
-                        '''
+                        sql(
+                            table,
+                            room,
+                            cnt
+                        )
                     )
             if curse.closed:
                 return True
@@ -75,10 +95,15 @@ def load(data: dict[str, int]) -> bool:
                 return False
 
 
-def consume(ETL: callable) -> None:
+def subscriber(ETL: callable) -> None:
     meta = configs()
+    servers = (
+        meta['boostrap_servers']
+        if ENV == 'docker'
+        else 'localhost:9092'
+    )
     con_conf = {
-        'bootstrap.servers': meta['boostrap_servers'],
+        'bootstrap.servers': servers,
         'group.id': meta['group_id'],
         'enable.auto.commit': False,
         'auto.offset.reset': meta['auto_offset_reset'],
@@ -92,7 +117,7 @@ def consume(ETL: callable) -> None:
             if mssg.error():
                 if mssg.error().code() in {KafkaError._PARTITION_EOF, }:
                     err = f'{mssg.topic()} EOF reached at {mssg.offset()}'
-                    print(err)
+                    print(err)  # probably should use logging, eh?
                 elif mssg.error():
                     raise KafkaException(mssg.error())
             else:
@@ -117,11 +142,11 @@ def run() -> None:
                 if retry_cnt > 2:
                     raise Exception('No dice!')
                 try:
-                    return (                        # This is what a
+                    return (                        # This is what a ETL
                         load(                       # data pipeline should
                             transform(              # look like IMHO.
-                                extract(data)       # Influenced by functional
-                            )                       # programming.
+                                extract(data)       # Been heavily influenced by
+                            )                       # functional programming.
                         )
                     )
                 except transients:
@@ -129,7 +154,7 @@ def run() -> None:
 
         return handles()
 
-    consume(etl)
+    subscriber(etl)
 
 
 if __name__ == '__main__':

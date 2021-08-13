@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import os
 import yaml
 from datetime import datetime
 from random import randint
@@ -9,8 +10,15 @@ from time import sleep
 from confluent_kafka import Message, Producer
 
 
-def config() -> dict:
-    with open('/pub/configs/specs.yaml') as confs:
+ENV = os.environ['_ENV_']
+if ENV == 'local':
+    WORKDIR = f'{os.environ["HOME"]}/workspace/repos/samplepad'
+if ENV == 'docker':
+    WORKDIR = ''
+
+
+def config() -> dict[str, str]:
+    with open(f'{WORKDIR}/pub/configs/specs.yaml') as confs:
         return yaml \
             .safe_load(
                 confs
@@ -33,9 +41,9 @@ def ack(error, mssg: Message) -> None:
         print(f'Message produced: {mssg}')
 
 
-def handle_transient_errors(producer: Producer, mssg: str, retry_cnt: int) -> None:
+def handles(producer: Producer, mssg: str, retry_cnt: int) -> None:
     if retry_cnt > 2: raise Exception('No dice!')
-    meta = config()
+    meta, transients = config(), (OSError, )
     kwargs = dict(
         topic=meta['topic'],
         key=make_hash(mssg),
@@ -44,24 +52,29 @@ def handle_transient_errors(producer: Producer, mssg: str, retry_cnt: int) -> No
     )
     try:
         producer.produce(**kwargs)
-    except OSError:
-        handle_transient_errors(
+    except transients:
+        handles(
             producer,
             mssg,
             retry_cnt=retry_cnt+1
         )
 
 
-def make_data() -> None:
+def run() -> None:
 
     meta = config()
+    servers = (
+        meta['boostrap_servers']
+        if ENV == 'docker'
+        else 'localhost:9092'
+    )
     prod_conf = {
-        'bootstrap.servers': meta['boostrap_servers'],
+        'bootstrap.servers': servers,
         'delivery.timeout.ms': meta['delivery_timeout_ms'],
     }
     rooms = {1: 'A', 2: 'B', 3: 'C', }
 
-    def publish() -> None:
+    def publisher() -> None:
         prod = Producer(prod_conf)
         for _ in range(10000000):
             mssg = json.dumps(
@@ -71,7 +84,7 @@ def make_data() -> None:
                     count=4 if rooms[randint(1, 3)] == 'A' else 1
                 )
             )
-            handle_transient_errors(
+            handles(
                 prod,
                 mssg=mssg,
                 retry_cnt=0
@@ -80,9 +93,9 @@ def make_data() -> None:
             sleep(0.01)
         prod.flush()
 
-    publish()
+    publisher()
 
 
 if __name__ == '__main__':
 
-    make_data()
+    run()
