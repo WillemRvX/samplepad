@@ -16,8 +16,58 @@ def configs() -> dict[str, str]:
             )
 
 
-def etl_on_the_fly() -> None:
+def extract(data: list[bytes]) -> list[json]:
+    return list(json.loads(r) for r in data)
 
+
+def transform(data: list[json]) -> dict[str, int]:
+
+    def qa_check(proc: dict) -> bool:
+        num_rooms = proc.keys()
+        if len(num_rooms) <= 3:
+            return True
+        else:
+            return False
+
+    if data:
+        aggs = defaultdict(int)
+        for r in data:
+            aggs[r['room']] += r['count']
+        if qa_check(aggs):
+            return dict(aggs)
+
+
+def load(data: dict[str, int]) -> bool:
+    meta = configs()
+    if data:
+        kwargs = dict(
+            dbname=meta['db_name'],
+            host=meta['db_host'],
+            user=os.environ.get('USER', 'jameskirk'),
+            password=os.environ.get('PW', '1b2b3'),
+        )
+        with psycopg2.connect(**kwargs) as conn:
+            with conn.cursor() as curse:
+                table = 'room_and_counts'
+                for room, cnt in data.items():
+                    curse.execute(
+                        f'''
+                        INSERT INTO {table} (room, count) 
+                        VALUES ('{room}', {cnt})
+                        ON CONFLICT (room)
+                        DO
+                            UPDATE
+                            SET count = {table}.count + {cnt}
+                            WHERE {table}.room = '{room}'
+                        '''
+                    )
+            if curse.closed:
+                return True
+            else:
+                return False
+
+
+def consume(ETL: callable) -> None:
     meta = configs()
     con_conf = {
         'bootstrap.servers': meta['boostrap_servers'],
@@ -25,80 +75,45 @@ def etl_on_the_fly() -> None:
         'enable.auto.commit': False,
         'auto.offset.reset': meta['auto_offset_reset'],
     }
-
-    def con(ETL: callable) -> None:
-        data, consumer = list(), Consumer(con_conf)
-        try:
-            consumer.subscribe([meta['topic'], ])
-            while True:
-                mssg = consumer.poll(timeout=1.0)
-                if mssg is None: continue
-                if mssg.error():
-                    if mssg.error().code() in {KafkaError._PARTITION_EOF, }:
-                        err = f'{mssg.topic()} EOF reached at {mssg.offset()}'
-                        print(err)
-                    elif mssg.error():
-                        raise KafkaException(mssg.error())
-                else:
-                    data.append(mssg.value())
-                    if len(data) == 100:
-                        if ETL(data):
-                            data = list()
-                            consumer.commit(
-                                asynchronous=False
-                            )
-        finally:
-            consumer.close()
-
-    def extract(data: list[bytes]) -> list[json]:
-        return list(json.loads(r) for r in data)
-
-    def transform(data: list[json]) -> dict[str, int]:
-
-        def qa_check(proc: dict) -> bool:
-            num_rooms = proc.keys()
-            if len(num_rooms) <= 3:
-                return True
+    data, consumer = list(), Consumer(con_conf)
+    try:
+        consumer.subscribe([meta['topic'], ])
+        while True:
+            mssg = consumer.poll(timeout=1.0)
+            if mssg is None: continue
+            if mssg.error():
+                if mssg.error().code() in {KafkaError._PARTITION_EOF, }:
+                    err = f'{mssg.topic()} EOF reached at {mssg.offset()}'
+                    print(err)
+                elif mssg.error():
+                    raise KafkaException(mssg.error())
             else:
-                return False
-
-        if data:
-            aggs = defaultdict(int)
-            for r in data:
-                aggs[r['room']] += r['count']
-            if qa_check(aggs):
-                return dict(aggs)
-
-    def load(data: dict[str, int]) -> bool:
-        if data:
-            kwargs = dict(
-                dbname=meta['db_name'],
-                host=meta['db_host'],
-                user=os.environ.get('USER', 'jameskirk'),
-                password=os.environ.get('PW', '1b2b3'),
-            )
-            with psycopg2.connect(**kwargs) as conn:
-                with conn.cursor() as curse:
-                    table = 'room_and_counts'
-                    for room, cnt in data.items():
-                        curse.execute(
-                            f'''
-                            INSERT INTO {table} (room, count) 
-                            VALUES ('{room}', {cnt})
-                            ON CONFLICT (room)
-                            DO
-                                UPDATE
-                                SET count = {table}.count + {cnt}
-                                WHERE {table}.room = '{room}'
-                            '''
+                data.append(mssg.value())
+                if len(data) == 100:
+                    if ETL(data):
+                        data = list()
+                        consumer.commit(
+                            asynchronous=False
                         )
-                if curse.closed:
-                    return True
-                else:
-                    return False
+    finally:
+        consumer.close()
+
+
+def run() -> None:
 
     def etl(data: list) -> bool:
-        return (
+
+        def handle_transcient_errors(etl: bool) -> bool:
+            retry_cnt = 0
+            while True:
+                if retry_cnt > 2:
+                    raise Exception('No dice!')
+                try:
+                    return etl
+                except OSError:
+                    retry_cnt += 1
+
+        return handle_transcient_errors(
             load(
                 transform(
                     extract(data)
@@ -106,9 +121,9 @@ def etl_on_the_fly() -> None:
             )
         )
 
-    con(etl)
+    consume(etl)
 
 
 if __name__ == '__main__':
 
-    etl_on_the_fly()
+    run()
