@@ -1,7 +1,7 @@
 
 auto_offset_reset: "earliest"
-boostrap_servers: "host.docker.internal:9092"
-db_host: "host.docker.internal"
+boostrap_servers: "localhost:9092"
+db_host: "ncc-1701-a.c5h6quudb39v.us-east-1.rds.amazonaws.com"
 db_name: "room_n_board"
 group_id: "reckoning"
 topic: "sampler-v1"
