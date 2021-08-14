@@ -1,0 +1,6 @@
+
+auto_offset_reset: "earliest"
+bucket: "roomscounts-1b2b3"
+boostrap_servers: "b-1.brokerbean.o32r3r.c16.kafka.us-east-1.amazonaws.com:9092,b-2.brokerbean.o32r3r.c16.kafka.us-east-1.amazonaws.com"
+group_id: "coldstorage"
+topic: "rooms-v1"
