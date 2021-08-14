@@ -2,7 +2,7 @@
 
 gendata_build:
 	docker build -t gendata -f ./gendata/Dockerfile \
-	--build-arg __ENV__=dock_loc \
+	--build-arg __ENV__=$(ENV) \
 	./gendata
 
 
@@ -16,7 +16,7 @@ gendata_runit:
 
 storage_build:
 	docker build -t storage -f ./storage/Dockerfile \
-	--build-arg __ENV__=dock_loc \
+	--build-arg __ENV__=$(ENV) \
 	./storage
 
 
@@ -38,7 +38,7 @@ storage_runit:
 
 totalcounts_build:
 	docker build -t totalcounts -f ./totalcounts/Dockerfile \
-	--build-arg __ENV__=dock_loc \
+	--build-arg __ENV__=$(ENV) \
 	./totalcounts
 
 
@@ -57,9 +57,9 @@ totalcounts_runit:
 
 
 buildall:
-	make gendata_build
-	make storage_build
-	make totalcounts_build
+	make gendata_build ENV=$(ENV)
+	make storage_build ENV=$(ENV)
+	make totalcounts_build ENV=$(ENV)
 
 
 runall:

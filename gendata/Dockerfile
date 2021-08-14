@@ -2,6 +2,7 @@ FROM python:3.9.6-slim
 COPY . /gendata
 WORKDIR /gendata
 ARG __ENV__
+ARG DEBIAN_FRONTEND=noninteractive
 ENV _ENV_=${__ENV__}
 RUN apt-get update \
     && apt-get install -y g++ gcc\
@@ -17,5 +18,4 @@ RUN apt-get update \
         /usr/share/man \
         /usr/share/doc \
         /usr/share/doc-base
-WORKDIR /
-CMD python /gendata/pipelines/produce.py
+CMD python /pipelines/produce.py

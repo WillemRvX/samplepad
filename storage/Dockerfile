@@ -2,6 +2,7 @@ FROM python:3.9.6-slim
 COPY . /storage
 WORKDIR /storage
 ARG __ENV__
+ARG DEBIAN_FRONTEND=noninteractive
 ENV _ENV_=${__ENV__}
 RUN apt-get update \
     && apt-get install -y g++ gcc\

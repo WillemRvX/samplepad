@@ -2,11 +2,8 @@ FROM python:3.9.6-slim
 COPY . /totalcounts
 WORKDIR /totalcounts
 ARG __ENV__
-ARG __PW__
-ARG __USER__
+ARG DEBIAN_FRONTEND=noninteractive
 ENV _ENV_=${__ENV__}
-ENV PW=${__PW__}
-ENV USER=${__USER__}
 RUN apt-get update \
     && apt-get install -y g++ gcc\
     && pip install --upgrade pip \
