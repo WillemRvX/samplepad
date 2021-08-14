@@ -1,4 +1,4 @@
 
-boostrap_servers: "localhost:9092"
+boostrap_servers: "b-1.brokerbean.o32r3r.c16.kafka.us-east-1.amazonaws.com:9092,b-2.brokerbean.o32r3r.c16.kafka.us-east-1.amazonaws.com"
 delivery_timeout_ms: "500"
 topic: "rooms-v1"
