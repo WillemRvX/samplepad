@@ -5,6 +5,7 @@ ARG __ENV__
 ARG DEBIAN_FRONTEND=noninteractive
 ENV _ENV_=${__ENV__}
 RUN apt-get update \
+    && apt-get install -y apt-utils \
     && apt-get install -y g++ gcc\
     && pip install --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt \
@@ -18,4 +19,5 @@ RUN apt-get update \
         /usr/share/man \
         /usr/share/doc \
         /usr/share/doc-base
-CMD python /pipelines/produce.py
+WORKDIR /
+CMD python /gendata/pipelines/produce.py
