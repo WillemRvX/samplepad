@@ -3,6 +3,7 @@
 import json
 import os
 import boto3
+import pyarrow
 import yaml
 from datetime import datetime
 from io import BytesIO
@@ -33,7 +34,7 @@ def configs() -> dict:
         return confs
 
 
-def extract_as_parquet(data: list[bytes]) -> parquet:
+def extract(data: list[bytes]) -> bytes:
     data = '\n'.join(list(r.decode('utf-8') for r in data))
     table = (
         pyarrow_json
@@ -43,18 +44,22 @@ def extract_as_parquet(data: list[bytes]) -> parquet:
                 )
             )
     )
-    return table
+    writer = pyarrow.BufferOutputStream()
+    parquet.write_table(table, writer)
+    return bytes(
+        writer.getvalue()
+    )
 
 
-def load(data: parquet) -> bool:
+def load(data: bytes) -> bool:
     confs, uuid = configs(), str(uuid4()).replace('-', '')[0:9]
     bucket_name, fname = confs['bucket'], f'data-{uuid}.parquet'
     if data:
         s3 = boto3.client('s3')
         s3.put_object(
-            data,
-            bucket_name,
-            PathBuilder()                           # I used to code in Scala.
+            Body=data,
+            Bucket=bucket_name,
+            Key=PathBuilder()                       # I used to code in Scala.
                 .bucket(bucket_name, cloud='aws')   # Chained   method   calls
                 .env('dv')                          # Kinda grew on me.   What
                 .source('rooms')                    # can I say?  -Will
@@ -97,7 +102,7 @@ def subscriber(EL: callable) -> None:
             else:
                 data.append(mssg.value())
                 print(mssg.value())
-                if len(data) == 500:
+                if len(data) == 1000:
                     if EL(data):
                         data = list()
                         consumer.commit(
@@ -117,9 +122,9 @@ def run() -> None:
                 if retry_cnt > 2:
                     raise Exception('No dice!')
                 try:
-                    return load(                # Can also do EL
-                        extract_as_parquet(
-                            data
+                    return (
+                        load(                   # Can also do EL
+                            extract(data)
                         )
                     )
                 except transients:
