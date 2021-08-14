@@ -37,7 +37,7 @@ class PathBuilder:
     def bucket(self, name: str, cloud: str):
         if cloud not in {'aws', }: raise Exception('Cloud not supported.')
         if name.find(':') > -1: raise Exception('Not needed!')
-        prfx = dict(aws='s3',)
+        prfx = dict(aws='s3', )
         self._bucket = f'{prfx[cloud]}://{name}'
         return self
 
@@ -74,7 +74,7 @@ class PathBuilder:
             raise Exception(
                 'Not a valid ISO 8601 datestamp!'
             )
-        yr, mo, dy = _ds
+        yr, mo, dy = ds.split('-')
         self._ds = f'yr={yr}/mo={mo}/dy={dy}'
         return self
 
