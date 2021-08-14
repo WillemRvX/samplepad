@@ -102,7 +102,7 @@ def subscriber(EL: callable) -> None:
             else:
                 data.append(mssg.value())
                 print(mssg.value())
-                if len(data) == 1000:
+                if len(data) == 5000:
                     if EL(data):
                         data = list()
                         consumer.commit(

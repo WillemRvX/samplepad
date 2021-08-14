@@ -91,7 +91,7 @@ def run() -> None:
                 retry_cnt=0
             )
             prod.poll(0.01)
-            sleep(0.05)
+            sleep(0.01)
         prod.flush()
 
     publisher()
