@@ -18,4 +18,4 @@ RUN apt-get update \
         /usr/share/doc \
         /usr/share/doc-base
 WORKDIR /
-CMD python /pub/pipelines/produce.py
+CMD python /makedata/pipelines/produce.py

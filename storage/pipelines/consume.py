@@ -27,7 +27,7 @@ def configs() -> dict:
             dict(
                 servers=dict(
                     local=f'localhost:{port}',
-                    docker_loc=f'host.internal.docker:{port}',
+                    dock_loc=f'host.internal.docker:{port}',
                 )
             )
         )
