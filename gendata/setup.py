@@ -5,7 +5,7 @@ from setuptools import setup
 
 
 setup(
-    name='makedata',
+    name='gendata',
     version='0.0',
-    packages=setuptools.find_packages()
+    packages=setuptools.find_namespace_packages()
 )

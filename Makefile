@@ -37,7 +37,7 @@ storage_runit:
 
 
 totalcounts_build:
-	docker build -t storage -f ./totalcounts/Dockerfile \
+	docker build -t totalcounts -f ./totalcounts/Dockerfile \
 	--build-arg __ENV__=dock_loc \
 	./totalcounts
 
