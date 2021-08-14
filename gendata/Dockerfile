@@ -1,6 +1,6 @@
 FROM python:3.9.6-slim
-COPY . /makedata
-WORKDIR /makedata
+COPY . /gendata
+WORKDIR /gendata
 ARG __ENV__
 ENV _ENV_=${__ENV__}
 RUN apt-get update \
@@ -18,4 +18,4 @@ RUN apt-get update \
         /usr/share/doc \
         /usr/share/doc-base
 WORKDIR /
-CMD python /makedata/pipelines/produce.py
+CMD python /gendata/pipelines/produce.py

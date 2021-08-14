@@ -18,13 +18,13 @@ else:
 
 
 def config() -> dict:
-    with open(f'{WORKDIR}/makedata/configs/specs.yaml') as confs:
+    with open(f'{WORKDIR}/gendata/configs/specs.yaml') as confs:
         confs, port = yaml.safe_load(confs), '9092'
         confs.update(
             dict(
                 servers=dict(
                     local=f'localhost:{port}',
-                    dock_loc=f'host.internal.docker:{port}',
+                    dock_loc=f'host.docker.internal:{port}',
                 )
             )
         )
