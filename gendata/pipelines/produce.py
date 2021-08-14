@@ -82,7 +82,7 @@ def run() -> None:
                 dict(
                     ts=str(datetime.utcnow()),
                     room=rooms[randint(1, 3)],
-                    count=4 if rooms[randint(1, 3)] == 'A' else 1
+                    count=2
                 )
             )
             handles(
