@@ -90,15 +90,15 @@ of data.  Unit Tests aren't really meant for that.
 System Tests are better suited for data dealers.  Anyhow,
 if anything can be unit tested, it's PathBuilder
 found here: https://github.com/WillemRvX/samplepad/blob/main/storage/commons/utils.py#L6.
-What do I mean by Systen Tests.  Well, if you send
+What do I mean by System Tests.  Well, if you send
 a 1,000 pieces of data into something like Kafka, you
 better get 1,000 pieces back on the other side, right?
 
 ### Random Thoughts on `pyarrow`
 
-Most of me experience with `parquet` has been through Spark.  
+Most of my experience with `parquet` has been through Spark.  
 Not wanting to spin up AWS EMR because that can be expensive,
-I wanted to use `pyarrow`.  First time using it.  Seems
+used `pyarrow` instead.  First time using it.  Seems
 heavily tied to Pandas.  Not too thrilled about that, because
-Pandas can really bloat up a Docker image / container.
+Pandas can really bloat up a Docker image.
 Anyhow, was able to figure out how to use it quickly.
