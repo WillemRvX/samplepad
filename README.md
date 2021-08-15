@@ -38,7 +38,7 @@ from the `rooms-v1` topic and loads them onto the S3 bucket
 
 - `totalcounts` consumes the raw data using "ETL" from
 topic `rooms-v1` and aggregates up the total overall counts
-of each room and the upserts them into a Postgres database 
+of each room and upserts them into a Postgres database 
 on AWS RDS.
 
 `gendata` is a producer. `storage` is a consumer part of
@@ -63,12 +63,13 @@ Arch going on here...  Sorta.
 There are a few functions repeated in each of the
 data pipeline scripts.  The function `config()` is
 the same for each one of them.  For initial "dev" purposes,
-I'm okay with repeating myself a little.  That way data
+I'm okay with repeating myself a little.  That way, data
 pipelines can be tested in isolation.  If a common theme
 occurs among data pipelines, then a <b>base image</b>
-can be created to hold all common functions / modules.  For
-the most part, a OOP framework using something like
-polymorphism won't be needed. 
+can be created to hold all common functions / modules making
+the code fairly DRY while being fairly decoupled at the same
+time.  For the most part, an OOP framework using 
+something like polymorphism won't be needed. 
 
 ### Code Style - Functional Programming
 
@@ -109,5 +110,5 @@ If you want to check out the upserts happening in
 real time, use this Python script: 
 https://github.com/WillemRvX/samplepad/blob/documentation/watch_totcnts_stream.py.
 Please `pip install psycopg2` or `pip install psycopg2-binary`.
-I'll give you the creds.  Well, assuming I have this up and 
+I can provide the creds.  Well, assuming I have this up and 
 running.
