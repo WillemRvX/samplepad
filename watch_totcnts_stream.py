@@ -15,7 +15,7 @@ kwargs = dict(
 def query():
     with psycopg2.connect(**kwargs) as conn:
         with conn.cursor(cursor_factory=DictCursor) as curse:
-            curse.execute('SELECT * FROM room_n_total_counts')
+            curse.execute('SELECT * FROM room_n_total_counts WHERE room = \'A\'')
             for r in curse:
                 print(dict(r))
 
