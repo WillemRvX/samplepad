@@ -23,7 +23,7 @@ folder.
 ### What's Going On
 
 Right now, we have pushed this repo onto an AWS EC2 
-instance.  The 3 data pipelines are build as Docker images 
+instance.  The 3 data pipelines are "build" as Docker images 
 running as detached / "deamonized" containers at the same 
 time on this EC2 instance.
 
