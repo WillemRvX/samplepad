@@ -27,16 +27,16 @@ instance.  The 3 data pipelines are build as Docker images
 running as detached / "deamonized" containers at the same 
 time on this EC2 instance.
 
-`gendata` produces made up data about rooms and their 
+- `gendata` produces made up data about rooms and their 
 counts and publishes them to an AWS MSK Kafka Cluster
 topic named `rooms-v1`.
 
-`storage` consumes the raw data using the "EL" pattern 
+- `storage` consumes the raw data using the "EL" pattern 
 from the `rooms-v1` topic and loads them onto the S3 bucket
 `s3://roomscounts-1b2b3` as parquet files using the
 `pyarrow` Python library.
 
-`totalcounts` consumes the raw data using "ETL" from
+- `totalcounts` consumes the raw data using "ETL" from
 topic `rooms-v1` and aggregates up the total overall counts
 of each room and the upserts them into a Postgres database 
 on AWS RDS.
@@ -102,3 +102,12 @@ used `pyarrow` instead.  First time using it.  Seems
 heavily tied to Pandas.  Not too thrilled about that, because
 Pandas can really bloat up a Docker image.
 Anyhow, was able to figure out how to use it quickly.
+
+### Check it Out if LIVE
+
+If you want to check out the upserts happening in
+real time, use this Python script: 
+https://github.com/WillemRvX/samplepad/blob/documentation/watch_totcnts_stream.py.
+Please `pip install psycopg2` or `pip install psycopg2-binary`.
+I'll give you the creds.  Well, assuming I have this up and 
+running.
